@@ -2141,6 +2141,11 @@ if _OPTIONS["targetos"]=="windows" then
 end
 
 if _OPTIONS["targetos"]=="linux" then
+
+	local SWITCHRES_DIR = MAME_DIR .. "3rdparty/switchres"
+	local KDE_PROTOCOL_DIR = SWITCHRES_DIR .. "/protocols/kde"
+	local WLROOTS_PROTOCOL_DIR = SWITCHRES_DIR .. "/protocols/wlroots"
+
 	files {
 		MAME_DIR .. "3rdparty/switchres/display_linux.cpp",
 		MAME_DIR .. "3rdparty/switchres/display_linux.h",
@@ -2150,17 +2155,29 @@ if _OPTIONS["targetos"]=="linux" then
 		MAME_DIR .. "3rdparty/switchres/custom_video_xrandr.h",
 		MAME_DIR .. "3rdparty/switchres/custom_video_drmkms.cpp",
 		MAME_DIR .. "3rdparty/switchres/custom_video_drmkms.h",
+		SWITCHRES_DIR .. "/custom_video_kde.cpp",
+		SWITCHRES_DIR .. "/custom_video_kde.h",
+		SWITCHRES_DIR .. "/custom_video_wlroots.cpp",
+		SWITCHRES_DIR .. "/custom_video_wlroots.h",
 	}
 
 	defines {
 		"SR_WITH_XRANDR",
 		"SR_WITH_KMSDRM",
 		"SR_WITH_SDL2",
+		"SR_WITH_KDE",
+		"SR_WITH_WLROOTS",
+	}
+
+	includedirs {
+		KDE_PROTOCOL_DIR,
+		WLROOTS_PROTOCOL_DIR,
 	}
 
 	buildoptions {
 		backtick("pkg-config --cflags libdrm"),
 		backtick("pkg-config --cflags sdl2"),
+		backtick("pkg-config --cflags wayland-client"),
 	}
 
 	links {
@@ -2170,6 +2187,140 @@ if _OPTIONS["targetos"]=="linux" then
 	local str = backtick("pkg-config --libs libdrm")
 	addlibfromstring(str)
 	addoptionsfromstring(str)
+
+	local str_wayland = backtick("pkg-config --libs wayland-client")
+	addlibfromstring(str_wayland)
+	addoptionsfromstring(str_wayland)
+
+	local KDE_DEVICE_XML =
+	KDE_PROTOCOL_DIR .. "/kde-output-device-v2.xml"
+
+	local KDE_MANAGEMENT_XML =
+	KDE_PROTOCOL_DIR .. "/kde-output-management-v2.xml"
+
+	local WLROOTS_XML =
+	WLROOTS_PROTOCOL_DIR .. "/wlr-output-management-unstable-v1.xml"
+
+	local KDE_DEVICE_H =
+	KDE_PROTOCOL_DIR .. "/kde-output-device-v2-client.h"
+
+	local KDE_DEVICE_C =
+	KDE_PROTOCOL_DIR .. "/kde-output-device-v2-client-protocol.c"
+
+	local KDE_MANAGEMENT_H =
+	KDE_PROTOCOL_DIR .. "/kde-output-management-v2-client.h"
+
+	local KDE_MANAGEMENT_C =
+	KDE_PROTOCOL_DIR .. "/kde-output-management-v2-client-protocol.c"
+
+	local WLROOTS_H =
+	WLROOTS_PROTOCOL_DIR .. "/wlr-output-management-unstable-v1-client.h"
+
+	local WLROOTS_C =
+	WLROOTS_PROTOCOL_DIR .. "/wlr-output-management-unstable-v1-client-protocol.c"
+
+	local WAYLAND_SCANNER = "wayland-scanner"
+
+	custombuildtask {
+		{
+			KDE_DEVICE_XML,
+			KDE_DEVICE_H,
+			{},
+			{
+				"@echo Generating KDE output-device-v2 client header...",
+				WAYLAND_SCANNER .. " client-header $(<) $(@)",
+			},
+		},
+	}
+
+	custombuildtask {
+		{
+			KDE_DEVICE_XML,
+			KDE_DEVICE_C,
+			{ KDE_DEVICE_H },
+			{
+				"@echo Generating KDE output-device-v2 client source...",
+				WAYLAND_SCANNER .. " private-code $(<) $(@)",
+			},
+		},
+	}
+
+	custombuildtask {
+		{
+			KDE_MANAGEMENT_XML,
+			KDE_MANAGEMENT_H,
+			{},
+			{
+				"@echo Generating KDE output-management-v2 client header...",
+				WAYLAND_SCANNER .. " client-header $(<) $(@)",
+			},
+		},
+	}
+
+	custombuildtask {
+		{
+			KDE_MANAGEMENT_XML,
+			KDE_MANAGEMENT_C,
+			{ KDE_MANAGEMENT_H },
+			{
+				"@echo Generating KDE output-management-v2 client source...",
+				WAYLAND_SCANNER .. " private-code $(<) $(@)",
+			},
+		},
+	}
+
+	custombuildtask {
+		{
+			WLROOTS_XML,
+			WLROOTS_H,
+			{},
+			{
+				"@echo Generating wlroots output-management client header...",
+				WAYLAND_SCANNER .. " client-header $(<) $(@)",
+			},
+		},
+	}
+
+	custombuildtask {
+		{
+			WLROOTS_XML,
+			WLROOTS_C,
+			{ WLROOTS_H },
+			{
+				"@echo Generating wlroots output-management client source...",
+				WAYLAND_SCANNER .. " private-code $(<) $(@)",
+			},
+		},
+	}
+
+	dependency {
+		{
+			SWITCHRES_DIR .. "/custom_video_kde.cpp",
+			KDE_DEVICE_H,
+		},
+		{
+			SWITCHRES_DIR .. "/custom_video_kde.cpp",
+			KDE_DEVICE_C,
+		},
+		{
+			SWITCHRES_DIR .. "/custom_video_kde.cpp",
+			KDE_MANAGEMENT_H,
+		},
+		{
+			SWITCHRES_DIR .. "/custom_video_kde.cpp",
+			KDE_MANAGEMENT_C,
+		},
+
+		{
+			SWITCHRES_DIR .. "/custom_video_wlroots.cpp",
+			WLROOTS_H,
+		},
+		{
+			SWITCHRES_DIR .. "/custom_video_wlroots.cpp",
+			WLROOTS_C,
+		},
+	}
+
 end
 
 if _OPTIONS["gcc"]~=nil and string.find(_OPTIONS["gcc"], "clang") then
