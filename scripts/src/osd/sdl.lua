@@ -57,6 +57,10 @@ function maintargetosdoptions(_target,_subtarget)
 		local str = backtick("pkg-config --libs libdrm")
 		addlibfromstring(str)
 		addoptionsfromstring(str)
+
+		local str_wayland = backtick("pkg-config --libs wayland-client")
+		addlibfromstring(str_wayland)
+		addoptionsfromstring(str_wayland)
 	end
 
 	if _OPTIONS["targetos"]=="windows" then

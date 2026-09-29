@@ -2178,7 +2178,7 @@ if _OPTIONS["targetos"]=="linux" then
 		backtick("pkg-config --cflags libdrm"),
 		backtick("pkg-config --cflags sdl2"),
 		backtick("pkg-config --cflags wayland-client"),
-	}
+    }
 
 	links {
 		"Xrandr",
@@ -2187,10 +2187,6 @@ if _OPTIONS["targetos"]=="linux" then
 	local str = backtick("pkg-config --libs libdrm")
 	addlibfromstring(str)
 	addoptionsfromstring(str)
-
-	local str_wayland = backtick("pkg-config --libs wayland-client")
-	addlibfromstring(str_wayland)
-	addoptionsfromstring(str_wayland)
 
 	local KDE_DEVICE_XML =
 	KDE_PROTOCOL_DIR .. "/kde-output-device-v2.xml"
@@ -2294,6 +2290,18 @@ if _OPTIONS["targetos"]=="linux" then
 	}
 
 	dependency {
+		{
+			SWITCHRES_DIR .. "/custom_video.cpp",
+			KDE_DEVICE_H,
+		},
+		{
+			SWITCHRES_DIR .. "/custom_video.cpp",
+			KDE_MANAGEMENT_H,
+		},
+		{
+			SWITCHRES_DIR .. "/custom_video.cpp",
+			WLROOTS_H,
+		},
 		{
 			SWITCHRES_DIR .. "/custom_video_kde.cpp",
 			KDE_DEVICE_H,
